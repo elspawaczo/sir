@@ -4,7 +4,7 @@ package sir
 
 import (
 	"encoding/json"
-	"io"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -19,6 +19,12 @@ var (
 	POOL_KEY  = "sir:pool"
 	TAKEN_KEY = "sir:key"
 )
+
+type StatsResponse struct {
+	Available int64  `json:"available"`
+	Taken     int64  `json:"taken"`
+	Remaining string `json:"remaining"`
+}
 
 type AllocateResponse struct {
 	Name string `json:"name"`
@@ -59,8 +65,23 @@ func allocate() string {
 	}
 }
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Hello World\n")
+// Return basic stats
+func Stats(w http.ResponseWriter, r *http.Request) {
+	// Number of available names in the pool
+	avail, _ := RedisClient.SCard(POOL_KEY).Result()
+	// Number of taken names in the pool
+	taken, _ := RedisClient.SCard(TAKEN_KEY).Result()
+	// Remaining
+	remaining := float64(taken) / float64(avail+taken) * float64(100)
+
+	resp, _ := json.Marshal(&StatsResponse{
+		Available: avail,
+		Taken:     taken,
+		Remaining: fmt.Sprintf("%.2f%%", remaining),
+	})
+
+	w.WriteHeader(200)
+	w.Write(resp)
 }
 
 // Get a random name from the pool and place it in the taken pool,
@@ -100,7 +121,6 @@ func HTTPError(w http.ResponseWriter, r *http.Request, status int) {
 	})
 
 	w.WriteHeader(status)
-
 	w.Write(resp)
 }
 
@@ -126,6 +146,7 @@ func Serve(r *string) {
 	goji.Use(JSONContentType)
 
 	// Register Routes
+	goji.Get("/", Stats)
 	goji.Post("/", Register)
 	goji.Delete("/:name", DeRegister)
 
