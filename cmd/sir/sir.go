@@ -29,6 +29,7 @@ var SirCobraCmd = &cobra.Command{
 	},
 }
 
+// Import sub command
 var SirImportCobraCommand = &cobra.Command{
 	Use:   "import",
 	Short: "Import hostnames from txt file",
