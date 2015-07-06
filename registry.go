@@ -4,6 +4,7 @@ package sir
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -71,6 +72,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+// Put the name back in the pool
+func DeRegister(c web.C, w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
+}
+
 func JsonContentTypeMW(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -94,6 +100,7 @@ func Serve(r *string) {
 
 	// Register Routes
 	goji.Post("/", Register)
+	goji.Delete("/:name", DeRegister)
 
 	// Serve the Application
 	goji.Serve()
