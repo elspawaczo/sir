@@ -3,10 +3,10 @@
 
 package sir
 
-import "gopkg.in/redis.v3"
+import "fmt"
 
 // Imports a txt file, reading each line and saving each line
 // into a redis set
-func Import(p string, r *redis.Client) {
-
+func Import(p *string, r *string) {
+	fmt.Println("Import")
 }
