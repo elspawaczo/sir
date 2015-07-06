@@ -4,7 +4,6 @@ package sir
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,6 +22,10 @@ var (
 
 type AllocateResponse struct {
 	Name string `json:"name"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
 // Holds the current redis client
@@ -74,10 +77,34 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 // Put the name back in the pool
 func DeRegister(c web.C, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
+	var err error
+	// Does it exist in the taken pool
+	exists, err := RedisClient.SIsMember(TAKEN_KEY, c.URLParams["name"]).Result()
+	if err != nil || !exists {
+		HTTPError(w, r, 404)
+	}
+
+	// Remove it from the taken pool
+	RedisClient.SRem(TAKEN_KEY, c.URLParams["name"])
+	// Add it to the pool
+	RedisClient.SAdd(POOL_KEY, c.URLParams["name"])
+
+	// Write Response
+	w.WriteHeader(204)
+	w.Write([]byte{})
 }
 
-func JsonContentTypeMW(c *web.C, h http.Handler) http.Handler {
+func HTTPError(w http.ResponseWriter, r *http.Request, status int) {
+	resp, _ := json.Marshal(&ErrorResponse{
+		Error: http.StatusText(status),
+	})
+
+	w.WriteHeader(status)
+
+	w.Write(resp)
+}
+
+func JSONContentType(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		h.ServeHTTP(w, r)
@@ -96,7 +123,7 @@ func Serve(r *string) {
 	// Ensure we close redis
 	defer RedisClient.Close()
 
-	goji.Use(JsonContentTypeMW)
+	goji.Use(JSONContentType)
 
 	// Register Routes
 	goji.Post("/", Register)
