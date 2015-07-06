@@ -3,9 +3,12 @@
 package sir
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/zenazn/goji/web"
 
 	"gopkg.in/redis.v3"
 	"gopkg.in/zenazn/goji.v0"
@@ -16,6 +19,10 @@ var (
 	POOL_KEY  = "sir:pool"
 	TAKEN_KEY = "sir:key"
 )
+
+type AllocateResponse struct {
+	Name string `json:"name"`
+}
 
 // Holds the current redis client
 var RedisClient *redis.Client
@@ -55,8 +62,21 @@ func hello(w http.ResponseWriter, r *http.Request) {
 // Get a random name from the pool and place it in the taken pool,
 // if it is already in the taken pool add a number to the name by the numer
 // of times the name has been used
-func AllocateName(w http.ResponseWriter, r *http.Request) {
-	log.Println(allocate())
+func Register(w http.ResponseWriter, r *http.Request) {
+	name := allocate()
+	resp, _ := json.Marshal(&AllocateResponse{
+		Name: name,
+	})
+
+	w.Write(resp)
+}
+
+func JsonContentTypeMW(c *web.C, h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
 }
 
 // Serves the HTTP Application
@@ -70,8 +90,10 @@ func Serve(r *string) {
 	// Ensure we close redis
 	defer RedisClient.Close()
 
+	goji.Use(JsonContentTypeMW)
+
 	// Register Routes
-	goji.Post("/", AllocateName)
+	goji.Post("/", Register)
 
 	// Serve the Application
 	goji.Serve()
