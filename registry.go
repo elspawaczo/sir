@@ -8,10 +8,10 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/zenazn/goji"
+	"github.com/zenazn/goji/bind"
 	"github.com/zenazn/goji/web"
-
 	"gopkg.in/redis.v3"
-	"gopkg.in/zenazn/goji.v0"
 )
 
 // Redis Keys
@@ -151,5 +151,5 @@ func Serve(r *string) {
 	goji.Delete("/:name", DeRegister)
 
 	// Serve the Application
-	goji.Serve()
+	goji.ServeListener(bind.Default())
 }

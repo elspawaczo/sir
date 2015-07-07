@@ -3,7 +3,7 @@
 #
 
 #Goji - Go Micro Webframework
-gopkg.in/zenazn/goji.v0
+github.com/zenazn/goji              f11b3b82931df3c540a0a960b6b1de60094d33d6
 # Redis Bindings
 gopkg.in/redis.v3
 # Cobra - POSIX CLI
