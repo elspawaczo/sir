@@ -39,11 +39,14 @@ func Import(p *string, r *string) {
 	// Loop over the lines
 	for scanner.Scan() {
 		v := scanner.Text()
-		err := c.SAdd("sir:pool", v).Err()
-		if err != nil {
-			log.Println(err)
-		} else {
-			log.Println(fmt.Sprintf("Added: %s", v))
+		exists, _ := c.SIsMember(TAKEN_KEY, v).Result()
+		if !exists {
+			err := c.SAdd(POOL_KEY, v).Err()
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Println(fmt.Sprintf("Added: %s", v))
+			}
 		}
 	}
 
