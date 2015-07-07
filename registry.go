@@ -17,7 +17,7 @@ import (
 // Redis Keys
 var (
 	POOL_KEY  = "sir:pool"
-	TAKEN_KEY = "sir:key"
+	TAKEN_KEY = "sir:allocated"
 )
 
 type StatsResponse struct {
