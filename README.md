@@ -53,16 +53,22 @@ Date: Mon, 06 Jul 2015 16:36:17 GMT
 
 ### `POST /`
 
-Will allocate a hostname and return it back.
+Allocates a hostname from the pool and saves instance id to that allocated hostname.
 
 ``` http
 POST / HTTP/1.1
-Accept: */*
+Accept: application/json
 Accept-Encoding: gzip, deflate
 Connection: keep-alive
-Content-Length: 0
+Content-Length: 14
+Content-Type: application/json
 Host: localhost:8000
 User-Agent: HTTPie/0.9.2
+
+{
+    "instance_id": "i-abc1234"
+    "private_ip": "10.0.0.1"
+}
 ```
 
 ``` http
@@ -76,12 +82,37 @@ Date: Mon, 06 Jul 2015 16:37:01 GMT
 }
 ```
 
-### `DELETE /:hostname`
+### `GET /:instance_id`
+
+Will return the hostname allocated to the instance and other related information.
+
+``` http
+GET /i-abc1234 HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+Host: localhost:8000
+User-Agent: HTTPie/0.9.2
+```
+
+``` http
+HTTP/1.1 200 OK
+Content-Length: 49
+Content-Type: application/json
+Date: Mon, 06 Jul 2015 16:36:17 GMT
+
+{
+    "hostname": triggerhappy,
+    "private_ip": "10.0.0.1"
+}
+```
+
+### `DELETE /:instance_id`
 
 Will remove the hostname from the taken pool allowing it to be reallocate.
 
 ``` http
-DELETE /triggerhappy HTTP/1.1
+DELETE /i-abc1234 HTTP/1.1
 Accept: */*
 Accept-Encoding: gzip, deflate
 Connection: keep-alive
