@@ -178,3 +178,14 @@ sir --help
 which sir
 ~/Development/sir/bin/sir
 ```
+
+### Third Parties
+
+`sir` uses a couple of third parties:
+
+* Cobra - A POSIX command line application builder: github.com/spf13/cobra
+* Rredis - A Go Redis Client: gopkg.in/redis.v3
+* Goji - A Go Micro Web Framework: github.com/zenazn/goji
+* Validator - A simple Go Validator: gopkg.in/validator.v2
+
+These will be installed by `gpm`
