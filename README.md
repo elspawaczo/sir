@@ -102,7 +102,8 @@ Content-Type: application/json
 Date: Mon, 06 Jul 2015 16:36:17 GMT
 
 {
-    "hostname": triggerhappy,
+    "instance_id": "i-abc1234",
+    "name": triggerhappy,
     "private_ip": "10.0.0.1"
 }
 ```
@@ -125,4 +126,55 @@ User-Agent: HTTPie/0.9.2
 HTTP/1.1 204 No Content
 Content-Type: application/json
 Date: Mon, 06 Jul 2015 16:37:42 GMT
+```
+
+## Developing
+
+To add new functionality to `sir` you will need:
+
+* Go 1.4+
+* Go Package Manager (`gpm`)
+
+### WorkSpace
+
+Set up your workspace by creating a the directory layout `Go` expects. All examples
+will assume you are working from `~/Development`.
+
+```
+mkdir -p ~/Development/sir/src/github.com/thisissoon/sir
+```
+
+Now cd into that diectory and clone the repository:
+
+```
+cd ~/Development/sir/src/github.com/thisissoon/sir
+git clone git@github.com:thisissoon/sir.git .
+```
+
+Now set your go path to be the top level directory of your workspace and update your
+`bin` path to include your workspace.
+
+```
+export $GOPATH=~/Development/sir
+export PATH=$PATH:$GOPATH/bin
+```
+
+You can now install the dependencies:
+
+```
+gpm install
+```
+
+Once everything is installed you can now build / install the project:
+
+```
+go build ./...
+```
+
+A `sir` command will now be on your `$PATH`
+
+```
+sir --help
+which sir
+~/Development/sir/bin/sir
 ```
