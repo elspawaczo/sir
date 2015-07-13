@@ -3,11 +3,16 @@
 package sir
 
 import (
-	"log"
+	"encoding/json"
 	"net/http"
 
 	"github.com/zenazn/goji/web"
 )
+
+type ErrorRespone struct {
+	StatusCode int    `json:"code"`
+	StatusText string `json:"message"`
+}
 
 // Base HTTP Handler Type emending our Applicaton Conext Type
 type ApplicationHandler struct {
@@ -26,14 +31,16 @@ func (h ApplicationHandler) ServeHTTPC(c web.C, w http.ResponseWriter, r *http.R
 	status, err := h.Handler(h.ApplicationContext, c, w, r)
 	// Handler errors
 	if err != nil {
-		log.Printf("HTTP %d: %q", status, err)
-		switch status {
-		case http.StatusNotFound:
-			http.NotFound(w, r)
-		case http.StatusInternalServerError:
-			http.Error(w, http.StatusText(status), status)
-		default:
-			http.Error(w, http.StatusText(status), status)
-		}
+		ErrorHandler(status, err, w)
 	}
+}
+
+// Error Handler
+func ErrorHandler(status int, err error, w http.ResponseWriter) {
+	body, _ := json.Marshal(&ErrorRespone{
+		StatusCode: status,
+		StatusText: http.StatusText(status),
+	})
+	w.WriteHeader(status)
+	w.Write(body)
 }
