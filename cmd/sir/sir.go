@@ -8,6 +8,7 @@ import (
 
 	"github.com/thisissoon/sir"
 	"github.com/thisissoon/sir/import"
+	"github.com/thisissoon/sir/registry"
 )
 
 var (
@@ -31,7 +32,7 @@ var SirCobraCmd = &cobra.Command{
 		defer a.Redis.Close()
 
 		// Serve the API
-		sir.Serve(a)
+		registry.Serve(a)
 	},
 }
 

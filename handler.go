@@ -12,7 +12,7 @@ import (
 // Base HTTP Handler Type emending our Applicaton Conext Type
 type ApplicationHandler struct {
 	*ApplicationContext
-	h func(*ApplicationContext, web.C, http.ResponseWriter, *http.Request) (int, error)
+	Handler func(*ApplicationContext, web.C, http.ResponseWriter, *http.Request) (int, error)
 }
 
 // Satisfy http.Handler, which Goji's web.Handler extends.
@@ -23,7 +23,7 @@ func (a ApplicationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Custom Serve HTTP handler which provides our application context to our
 // route handler functions
 func (h ApplicationHandler) ServeHTTPC(c web.C, w http.ResponseWriter, r *http.Request) {
-	status, err := h.h(h.ApplicationContext, c, w, r)
+	status, err := h.Handler(h.ApplicationContext, c, w, r)
 	// Handler errors
 	if err != nil {
 		log.Printf("HTTP %d: %q", status, err)

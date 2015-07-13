@@ -1,6 +1,6 @@
 // Main REST API Service Functionality
 
-package sir
+package registry
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/thisissoon/sir"
 	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
 )
@@ -34,7 +35,7 @@ type AllocateRequest struct {
 }
 
 // Allocates a name to the server, ensuring we always get a unique one
-func allocate(a *ApplicationContext) string {
+func allocate(a *sir.ApplicationContext) string {
 	for {
 		// Get a random name from the pool
 		member, err := a.Redis.SRandMember(a.PoolKey).Result()
@@ -62,7 +63,7 @@ func allocate(a *ApplicationContext) string {
 }
 
 // Return basic stats
-func Stats(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
+func Stats(a *sir.ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
 	// Number of available names in the pool
 	avail, _ := a.Redis.SCard(a.PoolKey).Result()
 	// Number of taken names in the pool
@@ -85,7 +86,7 @@ func Stats(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Reques
 // Get a random name from the pool and place it in the taken pool,
 // if it is already in the taken pool add a number to the name by the numer
 // of times the name has been used
-func Register(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
+func Register(a *sir.ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
 	name := allocate(a)
 	resp, _ := json.Marshal(&AllocateResponse{
 		Name: name,
@@ -97,7 +98,7 @@ func Register(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Req
 }
 
 // Put the name back in the pool
-func DeRegister(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
+func DeRegister(a *sir.ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
 	var err error
 
 	// Does it exist in the taken pool
@@ -127,15 +128,16 @@ func JSONContentType(c *web.C, h http.Handler) http.Handler {
 }
 
 // Serves the HTTP Application
-func Serve(a *ApplicationContext) {
+func Serve(a *sir.ApplicationContext) {
 	// Create new Web Client
 	r := web.New()
 
 	// Register Routes
-	r.Get("/", ApplicationHandler{a, Stats})
-	r.Post("/", ApplicationHandler{a, Register})
-	r.Delete("/:name", ApplicationHandler{a, DeRegister})
+	r.Get("/", sir.ApplicationHandler{a, Stats})
+	r.Post("/", sir.ApplicationHandler{a, Register})
+	r.Delete("/:name", sir.ApplicationHandler{a, DeRegister})
 
+	// Use Json Middleware
 	r.Use(JSONContentType)
 
 	// Serve the Application
