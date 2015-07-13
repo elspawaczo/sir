@@ -28,6 +28,7 @@ func Serve(a *sir.ApplicationContext) {
 	// Register Routes
 	r.Get("/", sir.ApplicationHandler{a, statsHandler})
 	r.Post("/", sir.ApplicationHandler{a, register.RegisterHandler})
+	r.Get("/:instance_id", sir.ApplicationHandler{a, register.DetailsHandler})
 	r.Delete("/:instance_id", sir.ApplicationHandler{a, unregister.UnRegisterHandler})
 
 	// Use Json Middleware
