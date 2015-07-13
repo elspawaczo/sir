@@ -13,7 +13,7 @@ import (
 
 // JSON Data structure for a stats reqyest response
 type statsResponse struct {
-	Available int64 `json:"available"`
+	Total     int64 `json:"total"`
 	Taken     int64 `json:"taken"`
 	Remaining int64 `json:"remaining"`
 }
@@ -22,14 +22,14 @@ type statsResponse struct {
 // total taken and total available
 func statsHandler(a *sir.ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
 	// Number of available names in the pool
-	avail, _ := a.Redis.SCard(a.PoolKey).Result()
+	remaining, _ := a.Redis.SCard(a.PoolKey).Result()
 	// Number of taken names in the pool
 	taken, _ := a.Redis.SCard(a.AllocatedKey).Result()
 	// Remaining
-	remaining := (avail + taken) - taken
+	total := remaining + taken
 
 	resp, _ := json.Marshal(&statsResponse{
-		Available: avail,
+		Total:     total,
 		Taken:     taken,
 		Remaining: remaining,
 	})
