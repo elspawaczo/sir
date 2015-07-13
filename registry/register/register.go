@@ -16,29 +16,22 @@ import (
 )
 
 // Request JSON Structure
-type requestJSON struct {
+type request struct {
 	InstanceID string `json:"instance_id" validate:"nonzero"`
 	PrivateIP  string `json:"private_ip" validate:"nonzero"`
 }
 
 // Response JSON Structure
-type responseJSON struct {
+type response struct {
 	Name string `json:"name"`
 }
 
-// Instance data stored at sir:instance:i-124abc
-type instance struct {
-	InstanceID string `json:"instance_id"`
-	PrivateIP  string `json"private_ip"`
-	Name       string `json:"name"`
-}
-
 // Allocated a name from the Pool, returning a name for the new instance
-func allocate(a *sir.ApplicationContext, d *requestJSON) (*instance, error) {
+func allocate(a *sir.ApplicationContext, r *request) (*sir.Instance, error) {
 	var err error
 
-	instanceData := &instance{}
-	instanceKey := fmt.Sprintf(a.InstanceKey, d.InstanceID)
+	instanceData := &sir.Instance{}
+	instanceKey := fmt.Sprintf(a.InstanceKey, r.InstanceID)
 
 	// Does the instance already exist, if so lets just return the hostname it has
 	// already been assigned
@@ -65,8 +58,8 @@ func allocate(a *sir.ApplicationContext, d *requestJSON) (*instance, error) {
 		}
 		// Add instance data to the instance key
 		instanceData.Name = name
-		instanceData.PrivateIP = d.PrivateIP
-		instanceData.InstanceID = d.InstanceID
+		instanceData.PrivateIP = r.PrivateIP
+		instanceData.InstanceID = r.InstanceID
 		value, err := json.Marshal(instanceData)
 		if err != nil {
 			log.Println("Failed to Marshal Instance Data")
@@ -102,7 +95,7 @@ func RegisterHandler(
 
 	// Decode the request JSON
 	decoder := json.NewDecoder(r.Body)
-	data := &requestJSON{}
+	data := &request{}
 	err := decoder.Decode(data)
 	if err != nil {
 		return 400, err
@@ -118,7 +111,7 @@ func RegisterHandler(
 		return 500, err
 	}
 
-	resp, err := json.Marshal(&responseJSON{Name: i.Name})
+	resp, err := json.Marshal(&response{Name: i.Name})
 	if err != nil {
 		return 500, err
 	}
