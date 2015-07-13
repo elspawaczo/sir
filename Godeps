@@ -8,3 +8,5 @@ github.com/zenazn/goji              f11b3b82931df3c540a0a960b6b1de60094d33d6
 gopkg.in/redis.v3
 # Cobra - POSIX CLI
 github.com/spf13/cobra              69e5f196b5d30673deb07a2221d89cf62e4b74ae
+# Valudation
+gopkg.in/validator.v2
