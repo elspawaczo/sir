@@ -1,7 +1,7 @@
 // Imports a txt file that will contain line seperated pool of
 // server naames.
 
-package sir
+package importer
 
 import (
 	"bufio"
@@ -9,19 +9,12 @@ import (
 	"log"
 	"os"
 
-	"gopkg.in/redis.v3"
+	"github.com/thisissoon/sir"
 )
 
 // Imports a txt file, reading each line and saving each line
 // into a redis set
-func Import(p *string, r *string) {
-	// Connect to Redis
-	c := redis.NewClient(&redis.Options{
-		Network: "tcp",
-		Addr:    *r,
-	})
-
-	defer c.Close()
+func Import(a *sir.ApplicationContext, p *string) {
 
 	// Open the file
 	f, err := os.Open(*p)
@@ -39,15 +32,20 @@ func Import(p *string, r *string) {
 	// Loop over the lines
 	for scanner.Scan() {
 		v := scanner.Text()
-		exists, _ := c.SIsMember(TAKEN_KEY, v).Result()
+		exists, _ := a.Redis.SIsMember(a.AllocatedKey, v).Result()
 		if !exists {
-			err := c.SAdd(POOL_KEY, v).Err()
-			if err != nil {
-				log.Println(err)
-			} else {
-				log.Println(fmt.Sprintf("Added: %s", v))
+			exists, _ := a.Redis.SIsMember(a.PoolKey, v).Result()
+			if !exists {
+				err := a.Redis.SAdd(a.PoolKey, v).Err()
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println(fmt.Sprintf("Added: %s", v))
+				}
 			}
 		}
 	}
+
+	log.Println("Done")
 
 }

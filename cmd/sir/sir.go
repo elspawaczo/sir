@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thisissoon/sir"
+	"github.com/thisissoon/sir/import"
 )
 
 var (
@@ -35,7 +36,12 @@ var SirImportCobraCommand = &cobra.Command{
 	Short: "Import hostnames from txt file",
 	Long:  "Reads a line delimited text file of host names into Redis set",
 	Run: func(cmd *cobra.Command, args []string) {
-		sir.Import(&ImportFilePath, &RedisAddr)
+		// Create application context
+		a := sir.NewApplicationContext(&RedisAddr)
+		defer a.Redis.Close()
+
+		// Run the importer
+		importer.Import(a, &ImportFilePath)
 	},
 }
 
