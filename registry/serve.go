@@ -62,27 +62,6 @@ func allocate(a *sir.ApplicationContext) string {
 	}
 }
 
-// Return basic stats
-func Stats(a *sir.ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
-	// Number of available names in the pool
-	avail, _ := a.Redis.SCard(a.PoolKey).Result()
-	// Number of taken names in the pool
-	taken, _ := a.Redis.SCard(a.AllocatedKey).Result()
-	// Remaining
-	remaining := float64(taken) / float64(avail+taken) * float64(100)
-
-	resp, _ := json.Marshal(&StatsResponse{
-		Available: avail,
-		Taken:     taken,
-		Remaining: fmt.Sprintf("%.2f%%", remaining),
-	})
-
-	w.WriteHeader(200)
-	w.Write(resp)
-
-	return 200, nil
-}
-
 // Get a random name from the pool and place it in the taken pool,
 // if it is already in the taken pool add a number to the name by the numer
 // of times the name has been used
@@ -133,7 +112,7 @@ func Serve(a *sir.ApplicationContext) {
 	r := web.New()
 
 	// Register Routes
-	r.Get("/", sir.ApplicationHandler{a, Stats})
+	r.Get("/", sir.ApplicationHandler{a, statsHandler})
 	r.Post("/", sir.ApplicationHandler{a, Register})
 	r.Delete("/:name", sir.ApplicationHandler{a, DeRegister})
 
