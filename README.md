@@ -45,15 +45,15 @@ Content-Type: application/json
 Date: Mon, 06 Jul 2015 16:36:17 GMT
 
 {
-    "available": 1045,
-    "remaining": "1.88%",
-    "taken": 20
+    "remaining": 1063,
+    "taken": 0,
+    "total": 1063
 }
 ```
 
 ### `POST /`
 
-Allocates a hostname from the pool and saves instance id to that allocated hostname.
+Allocates a name from the pool and saves instance id to that allocated hostname.
 
 ``` http
 POST / HTTP/1.1
@@ -66,7 +66,7 @@ Host: localhost:8000
 User-Agent: HTTPie/0.9.2
 
 {
-    "instance_id": "i-abc1234"
+    "instance_id": "i-abc1234",
     "private_ip": "10.0.0.1"
 }
 ```
@@ -84,7 +84,7 @@ Date: Mon, 06 Jul 2015 16:37:01 GMT
 
 ### `GET /:instance_id`
 
-Will return the hostname allocated to the instance and other related information.
+Will return the instance information including the name and ip address.
 
 ``` http
 GET /i-abc1234 HTTP/1.1
@@ -103,14 +103,14 @@ Date: Mon, 06 Jul 2015 16:36:17 GMT
 
 {
     "instance_id": "i-abc1234",
-    "name": triggerhappy,
+    "name": "triggerhappy",
     "private_ip": "10.0.0.1"
 }
 ```
 
 ### `DELETE /:instance_id`
 
-Will remove the hostname from the taken pool allowing it to be reallocate.
+Will remove the instance and release the name back into the pool.
 
 ``` http
 DELETE /i-abc1234 HTTP/1.1
@@ -168,7 +168,7 @@ gpm install
 Once everything is installed you can now build / install the project:
 
 ```
-go build ./...
+go install ./...
 ```
 
 A `sir` command will now be on your `$PATH`
