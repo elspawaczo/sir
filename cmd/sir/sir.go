@@ -26,7 +26,12 @@ var SirCobraCmd = &cobra.Command{
 	Short: "SOON_ Instance Registry Service",
 	Long:  sirCobraCmsDesc,
 	Run: func(cmd *cobra.Command, args []string) {
-		sir.Serve(&RedisAddr)
+		// Create application context
+		a := sir.NewApplicationContext(&RedisAddr)
+		defer a.Redis.Close()
+
+		// Serve the API
+		sir.Serve(a)
 	},
 }
 

@@ -4,20 +4,13 @@ package sir
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/zenazn/goji"
-	"github.com/zenazn/goji/bind"
+	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
-	"gopkg.in/redis.v3"
-)
-
-// Redis Keys
-var (
-	POOL_KEY  = "sir:pool"
-	TAKEN_KEY = "sir:allocated"
 )
 
 type StatsResponse struct {
@@ -34,29 +27,32 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// Holds the current redis client
-var RedisClient *redis.Client
+// JSON request data structure for registering a new instance
+type AllocateRequest struct {
+	InstanceID string `json:instance_id`
+	PrivateIP  string `josn:private_ip`
+}
 
 // Allocates a name to the server, ensuring we always get a unique one
-func allocate() string {
+func allocate(a *ApplicationContext) string {
 	for {
 		// Get a random name from the pool
-		member, err := RedisClient.SRandMember(POOL_KEY).Result()
+		member, err := a.Redis.SRandMember(a.PoolKey).Result()
 		if err != nil {
 			log.Println(err)
 		}
 		// Exists in the taken set?
-		exists, err := RedisClient.SIsMember(TAKEN_KEY, member).Result()
+		exists, err := a.Redis.SIsMember(a.AllocatedKey, member).Result()
 		if err != nil {
 			log.Println(err)
 		}
 		// If not taken add to remove from the pool and add to taken set
 		if !exists {
-			err = RedisClient.SRem(POOL_KEY, member).Err()
+			err = a.Redis.SRem(a.PoolKey, member).Err()
 			if err != nil {
 				log.Println(err)
 			}
-			err = RedisClient.SAdd(TAKEN_KEY, member).Err()
+			err = a.Redis.SAdd(a.AllocatedKey, member).Err()
 			if err != nil {
 				log.Println(err)
 			}
@@ -66,11 +62,11 @@ func allocate() string {
 }
 
 // Return basic stats
-func Stats(w http.ResponseWriter, r *http.Request) {
+func Stats(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
 	// Number of available names in the pool
-	avail, _ := RedisClient.SCard(POOL_KEY).Result()
+	avail, _ := a.Redis.SCard(a.PoolKey).Result()
 	// Number of taken names in the pool
-	taken, _ := RedisClient.SCard(TAKEN_KEY).Result()
+	taken, _ := a.Redis.SCard(a.AllocatedKey).Result()
 	// Remaining
 	remaining := float64(taken) / float64(avail+taken) * float64(100)
 
@@ -82,46 +78,44 @@ func Stats(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	w.Write(resp)
+
+	return 200, nil
 }
 
 // Get a random name from the pool and place it in the taken pool,
 // if it is already in the taken pool add a number to the name by the numer
 // of times the name has been used
-func Register(w http.ResponseWriter, r *http.Request) {
-	name := allocate()
+func Register(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
+	name := allocate(a)
 	resp, _ := json.Marshal(&AllocateResponse{
 		Name: name,
 	})
 
 	w.Write(resp)
+
+	return 200, nil
 }
 
 // Put the name back in the pool
-func DeRegister(c web.C, w http.ResponseWriter, r *http.Request) {
+func DeRegister(a *ApplicationContext, c web.C, w http.ResponseWriter, r *http.Request) (int, error) {
 	var err error
+
 	// Does it exist in the taken pool
-	exists, err := RedisClient.SIsMember(TAKEN_KEY, c.URLParams["name"]).Result()
+	exists, err := a.Redis.SIsMember(a.AllocatedKey, c.URLParams["name"]).Result()
 	if err != nil || !exists {
-		HTTPError(w, r, 404)
+		return 404, errors.New(fmt.Sprintf("%s not allocated", c.URLParams["name"]))
 	}
 
 	// Remove it from the taken pool
-	RedisClient.SRem(TAKEN_KEY, c.URLParams["name"])
+	a.Redis.SRem(a.AllocatedKey, c.URLParams["name"])
 	// Add it to the pool
-	RedisClient.SAdd(POOL_KEY, c.URLParams["name"])
+	a.Redis.SAdd(a.PoolKey, c.URLParams["name"])
 
 	// Write Response
 	w.WriteHeader(204)
 	w.Write([]byte{})
-}
 
-func HTTPError(w http.ResponseWriter, r *http.Request, status int) {
-	resp, _ := json.Marshal(&ErrorResponse{
-		Error: http.StatusText(status),
-	})
-
-	w.WriteHeader(status)
-	w.Write(resp)
+	return 204, nil
 }
 
 func JSONContentType(c *web.C, h http.Handler) http.Handler {
@@ -133,23 +127,17 @@ func JSONContentType(c *web.C, h http.Handler) http.Handler {
 }
 
 // Serves the HTTP Application
-func Serve(r *string) {
-	// Connect to Redis
-	RedisClient = redis.NewClient(&redis.Options{
-		Network: "tcp",
-		Addr:    *r,
-	})
-
-	// Ensure we close redis
-	defer RedisClient.Close()
-
-	goji.Use(JSONContentType)
+func Serve(a *ApplicationContext) {
+	// Create new Web Client
+	r := web.New()
 
 	// Register Routes
-	goji.Get("/", Stats)
-	goji.Post("/", Register)
-	goji.Delete("/:name", DeRegister)
+	r.Get("/", ApplicationHandler{a, Stats})
+	r.Post("/", ApplicationHandler{a, Register})
+	r.Delete("/:name", ApplicationHandler{a, DeRegister})
+
+	r.Use(JSONContentType)
 
 	// Serve the Application
-	goji.ServeListener(bind.Default())
+	graceful.ListenAndServe(":8000", r)
 }
