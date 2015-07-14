@@ -10,6 +10,7 @@ import (
 	"github.com/thisissoon/sir/registry/unregister"
 	"github.com/zenazn/goji/graceful"
 	"github.com/zenazn/goji/web"
+	"github.com/zenazn/goji/web/middleware"
 )
 
 func JSONContentType(c *web.C, h http.Handler) http.Handler {
@@ -31,8 +32,9 @@ func Serve(a *sir.ApplicationContext) {
 	r.Get("/:instance_id", sir.ApplicationHandler{a, register.DetailsHandler})
 	r.Delete("/:instance_id", sir.ApplicationHandler{a, unregister.UnRegisterHandler})
 
-	// Use Json Middleware
+	// Setup Middleware
 	r.Use(JSONContentType)
+	r.Use(middleware.Logger)
 
 	// Serve the Application
 	graceful.ListenAndServe(":8000", r)
